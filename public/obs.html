@@ -71,22 +71,16 @@
 
         .pokemon-img {
             position: absolute;
-            /* IMPORTANT: Allows it to stack ON TOP of the pokeball, not next to it */
-            bottom: 50%;
-            /* Anchor to the vertical center of the slot */
+            top: 50%;
             left: 50%;
-            /* Anchor to horizontal center */
-            transform: translate(-50%, 20%);
-            /* Center horizontally, push down slightly so feet hit the white circle */
-            height: 250%;
-            /* Super gigante */
-            width: auto;
-            max-width: 300%;
+            transform: translate(-50%, -55%);
+            /* Sits exactly in the center, pushed just slightly up */
+            width: 100%;
+            /* Same width as pokeball roughly */
+            height: 100%;
             object-fit: contain;
             filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.6));
             display: none;
-            transform-origin: bottom center;
-            /* Grow upwards */
             transition: all 0.3s ease;
             z-index: 2;
         }
