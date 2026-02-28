@@ -34,30 +34,57 @@
 
         .slot {
             width: 15%;
-            /* Each pokeball is around 1/6th of the container */
             height: 100%;
             display: flex;
             justify-content: center;
             align-items: flex-end;
-            /* Ancora os Pokémons exatamente pela base (pés) */
             position: relative;
         }
 
+        .pokeball {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            aspect-ratio: 1;
+            /* Basic pokeball styling to match the overlay */
+            background: linear-gradient(to bottom, #ff3333 48%, #333 48%, #333 52%, #fff 52%);
+            border-radius: 50%;
+            border: 4px solid #333;
+            box-sizing: border-box;
+            box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.4);
+            z-index: 1;
+            /* Poke-ball stays behind */
+        }
+
+        .pokeball::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30%;
+            height: 30%;
+            background: #fff;
+            border-radius: 50%;
+            border: 4px solid #333;
+            box-sizing: border-box;
+        }
+
         .pokemon-img {
-            height: 220%;
-            /* Faz eles ficarem GIGANTES igual na primeira foto */
+            height: 160%;
+            /* Adjusted slightly since it now sits directly on the native pokeball */
             width: auto;
-            /* Mantém a proporção correta de largura = não amassa */
-            max-width: 300%;
+            max-width: 250%;
             object-fit: contain;
             filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.6));
             display: none;
             position: relative;
-            margin-bottom: 60px;
-            /* Levanta exatamente os pés pro meio da Pokébola */
+            margin-bottom: 25%;
+            /* Pushes the feet to the center of the pokeball */
             transform-origin: bottom center;
-            /* Se você alterar o tamanho depois, ele vai crescer SÓ pra cima, sem sair das pokébolas */
             transition: all 0.3s ease;
+            z-index: 2;
+            /* Pokemon in front of the ball */
         }
 
         /* Animaçãozinha leve quando um pokemon entra no time */
@@ -88,6 +115,7 @@
         const container = document.getElementById('slots-container');
         container.innerHTML = Array.from({ length: 6 }, (_, i) => `
             <div class="slot">
+                <div class="pokeball"></div>
                 <img id="poke-${i}" class="pokemon-img" src="" alt="Pokemon ${i + 1}">
             </div>
         `).join('');
