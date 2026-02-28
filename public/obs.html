@@ -18,27 +18,24 @@
         }
 
         #slots-container {
+            position: absolute;
+            left: 5%;
+            /* Aligns with the first pokeball */
+            bottom: 3%;
+            /* Distance from bottom of screen to pokeballs */
+            width: 70%;
+            /* Box spanning the 6 pokeballs */
+            height: 15%;
+            /* Height of the pokeballs */
             display: flex;
-            justify-content: flex-start;
-            /* Start from the left */
-            align-items: flex-end;
-            /* Align to the bottom */
-            gap: 1.5%;
-            /* Space between the pokeballs */
-            width: 100vw;
-            height: 100vh;
-            padding-left: 5%;
-            /* Offset from the left edge */
-            padding-bottom: 2%;
-            /* Offset from the bottom edge */
-            box-sizing: border-box;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .slot {
-            width: 10%;
-            /* Roughly the width of one pokeball relative to screen */
-            aspect-ratio: 1;
-            /* Keep it square */
+            width: 14%;
+            /* 100% / 6 pokeballs = ~16%, minus some gap */
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -46,14 +43,14 @@
         }
 
         .pokemon-img {
-            max-width: 150%;
-            max-height: 150%;
+            max-width: 130%;
+            max-height: 130%;
             object-fit: contain;
             filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.6));
             display: none;
             position: relative;
             bottom: 25px;
-            /* Lift them slightly above the pokeballs */
+            /* Adjust this value if they float too high/low */
             transition: all 0.3s ease;
         }
 
