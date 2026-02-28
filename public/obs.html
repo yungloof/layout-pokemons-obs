@@ -19,22 +19,22 @@
 
         #slots-container {
             position: absolute;
-            left: 5%;
-            /* Aligns with the first pokeball */
-            bottom: 3%;
-            /* Distance from bottom of screen to pokeballs */
-            width: 70%;
-            /* Box spanning the 6 pokeballs */
+            left: 8.5%;
+            /* Push slightly further right */
+            bottom: 2%;
+            /* Sits very close to the bottom edge */
+            width: 58%;
+            /* The pokeballs take up roughly 58% of the full 1080p width */
             height: 15%;
-            /* Height of the pokeballs */
+            /* Container height */
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .slot {
-            width: 14%;
-            /* 100% / 6 pokeballs = ~16%, minus some gap */
+            width: 15%;
+            /* Each pokeball is around 1/6th of the container */
             height: 100%;
             display: flex;
             justify-content: center;
@@ -44,13 +44,14 @@
 
         .pokemon-img {
             max-width: 130%;
+            /* Large enough to fill the circle */
             max-height: 130%;
             object-fit: contain;
             filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.6));
             display: none;
             position: relative;
-            bottom: 25px;
-            /* Adjust this value if they float too high/low */
+            bottom: 12px;
+            /* Lowered from 25px so they sit inside the center circle */
             transition: all 0.3s ease;
         }
 
