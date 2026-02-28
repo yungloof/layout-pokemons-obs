@@ -38,20 +38,25 @@
             height: 100%;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-end;
+            /* Ancora os Pokémons exatamente pela base (pés) */
             position: relative;
         }
 
         .pokemon-img {
-            max-width: 130%;
-            /* Large enough to fill the circle */
-            max-height: 130%;
+            height: 220%;
+            /* Faz eles ficarem GIGANTES igual na primeira foto */
+            width: auto;
+            /* Mantém a proporção correta de largura = não amassa */
+            max-width: 300%;
             object-fit: contain;
             filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.6));
             display: none;
             position: relative;
-            bottom: 12px;
-            /* Lowered from 25px so they sit inside the center circle */
+            margin-bottom: 60px;
+            /* Levanta exatamente os pés pro meio da Pokébola */
+            transform-origin: bottom center;
+            /* Se você alterar o tamanho depois, ele vai crescer SÓ pra cima, sem sair das pokébolas */
             transition: all 0.3s ease;
         }
 
