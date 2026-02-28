@@ -37,23 +37,26 @@
             height: 100%;
             display: flex;
             justify-content: center;
-            align-items: flex-end;
+            align-items: center;
+            /* Voltar a alinhar pelo centro para bater com a pokébola */
             position: relative;
         }
 
         .pokeball {
             position: absolute;
-            bottom: 0;
-            width: 100%;
+            top: 50%;
+            /* Centraliza a pokébola verticalmente na slot */
+            transform: translateY(-50%);
+            width: 90%;
+            /* Pokébola ocupa quase toda a largura do slot */
             aspect-ratio: 1;
-            /* Basic pokeball styling to match the overlay */
+            /* Basic pokeball styling */
             background: linear-gradient(to bottom, #ff3333 48%, #333 48%, #333 52%, #fff 52%);
             border-radius: 50%;
             border: 4px solid #333;
             box-sizing: border-box;
             box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.4);
             z-index: 1;
-            /* Poke-ball stays behind */
         }
 
         .pokeball::after {
@@ -62,8 +65,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 30%;
-            height: 30%;
+            width: 25%;
+            height: 25%;
             background: #fff;
             border-radius: 50%;
             border: 4px solid #333;
@@ -71,20 +74,19 @@
         }
 
         .pokemon-img {
-            height: 160%;
-            /* Adjusted slightly since it now sits directly on the native pokeball */
+            height: 250%;
+            /* Super gigante */
             width: auto;
-            max-width: 250%;
+            max-width: 300%;
             object-fit: contain;
             filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.6));
             display: none;
             position: relative;
-            margin-bottom: 25%;
-            /* Pushes the feet to the center of the pokeball */
+            margin-bottom: 20%;
+            /* Ajuste fino pra sola do pé encostar no pino branco */
             transform-origin: bottom center;
             transition: all 0.3s ease;
             z-index: 2;
-            /* Pokemon in front of the ball */
         }
 
         /* Animaçãozinha leve quando um pokemon entra no time */
