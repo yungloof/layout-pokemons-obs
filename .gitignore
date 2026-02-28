@@ -1,0 +1,4 @@
+node_modules/
+.env
+team_state.json
+.DS_Store

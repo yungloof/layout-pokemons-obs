@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Time Pokémon</title>
+    <!-- Inclui Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #1a73e8;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        p.subtitle {
+            color: #555;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .slot-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .slot-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .slot-title {
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .img-container {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            border-radius: 50%;
+            border: 2px dashed #ddd;
+        }
+
+        .pokemon-img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            display: none;
+        }
+
+        input {
+            width: 80%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-update {
+            background-color: #1a73e8;
+            flex: 1;
+        }
+
+        .btn-clear {
+            background-color: #dc3545;
+        }
+
+        .status {
+            margin-top: 30px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: bold;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .team-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Painel de Controle do Time</h1>
+    <p class="subtitle">Altere os Pokémon aqui e eles atualizarão na live automaticamente!</p>
+
+    <div class="team-grid" id="grid">
+        <!-- Cards gerados por JS -->
+    </div>
+
+    <div id="status-msg" class="status">Atualizado no OBS!</div>
+
+    <script>
+        const socket = io();
+        const grid = document.getElementById('grid');
+
+        // Cria os 6 cards no HTML
+        grid.innerHTML = Array.from({ length: 6 }, (_, i) => `
+            <div class="slot-card">
+                <div class="slot-title">Vaga ${i + 1}</div>
+                <div class="img-container">
+                    <img id="prev-${i}" class="pokemon-img" src="">
+                </div>
+                <input type="text" id="input-${i}" placeholder="Nome ou Nº da Dex">
+                <div class="btn-group">
+                    <button class="btn-update" onclick="enviar(${i})">Salvar</button>
+                    <button class="btn-clear" onclick="limpar(${i})">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Permite usar a tecla Enter nos inputs
+        for (let i = 0; i < 6; i++) {
+            document.getElementById(`input-${i}`).addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') enviar(i);
+            });
+        }
+
+        // Recebe o estado atual do servidor e atualiza os inputs/imagens
+        socket.on('teamUpdate', (team) => {
+            team.forEach((pokemonName, index) => {
+                document.getElementById(`input-${index}`).value = pokemonName || "";
+                atualizarPreviewLocal(index, pokemonName);
+            });
+        });
+
+        // Envia novo pokemon pro servidor (e consequentemente pro OBS)
+        function enviar(index) {
+            const val = document.getElementById(`input-${index}`).value.trim().toLowerCase();
+            socket.emit('updateSlot', { index: index, pokemon: val });
+            mostrarAviso();
+        }
+
+        // Limpa o pokemon do servidor
+        function limpar(index) {
+            document.getElementById(`input-${index}`).value = "";
+            socket.emit('clearSlot', index);
+            mostrarAviso();
+        }
+
+        // Mostra o pokemon no painel admin (mesma lógica do OBS para a pessoa ver o que colocou)
+        function atualizarPreviewLocal(index, identificador) {
+            let img = document.getElementById(`prev-${index}`);
+            let container = img.parentElement;
+
+            if (!identificador) {
+                img.style.display = 'none';
+                container.style.border = "2px dashed #ddd";
+                return;
+            }
+
+            img.style.display = 'block';
+            container.style.border = "2px solid #1a73e8";
+
+            identificador = identificador.toLowerCase().trim();
+            img.src = `https://play.pokemonshowdown.com/sprites/ani/${identificador}.gif`;
+
+            img.onerror = function () {
+                if (this.src.includes('showdown')) {
+                    this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${identificador}.png`;
+                } else {
+                    this.style.display = 'none';
+                    container.style.border = "2px dashed red"; // Indica erro no nome
+                }
+            };
+        }
+
+        // Feedback visual rápido
+        function mostrarAviso() {
+            const msg = document.getElementById('status-msg');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 2000);
+        }
+    </script>
+</body>
+
+</html>
