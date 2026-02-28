@@ -38,19 +38,15 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* Voltar a alinhar pelo centro para bater com a pokébola */
             position: relative;
         }
 
         .pokeball {
             position: absolute;
             top: 50%;
-            /* Centraliza a pokébola verticalmente na slot */
             transform: translateY(-50%);
             width: 90%;
-            /* Pokébola ocupa quase toda a largura do slot */
             aspect-ratio: 1;
-            /* Basic pokeball styling */
             background: linear-gradient(to bottom, #ff3333 48%, #333 48%, #333 52%, #fff 52%);
             border-radius: 50%;
             border: 4px solid #333;
@@ -74,6 +70,14 @@
         }
 
         .pokemon-img {
+            position: absolute;
+            /* IMPORTANT: Allows it to stack ON TOP of the pokeball, not next to it */
+            bottom: 50%;
+            /* Anchor to the vertical center of the slot */
+            left: 50%;
+            /* Anchor to horizontal center */
+            transform: translate(-50%, 20%);
+            /* Center horizontally, push down slightly so feet hit the white circle */
             height: 250%;
             /* Super gigante */
             width: auto;
@@ -81,10 +85,8 @@
             object-fit: contain;
             filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.6));
             display: none;
-            position: relative;
-            margin-bottom: 20%;
-            /* Ajuste fino pra sola do pé encostar no pino branco */
             transform-origin: bottom center;
+            /* Grow upwards */
             transition: all 0.3s ease;
             z-index: 2;
         }
