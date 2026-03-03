@@ -313,7 +313,7 @@
 
             // Sistema de Fallback (Se a imagem não existir na fonte 1, vai tentar a 2, 3, etc)
             img.onerror = function () {
-                if (this.src.includes(\'dex/\')) {
+                if (this.src.includes('dex/')) {
                     // Fallback 1: PNG Estático da PokeAPI
                     this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${identificador}.png`;
                 } else {
