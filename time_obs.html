@@ -41,13 +41,13 @@
         }
 
         .pokemon-img {
-            max-width: 120%;
-            max-height: 120%;
+            max-width: 150%;
+            max-height: 150%;
             object-fit: contain;
             filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.6));
             display: none;
             position: relative;
-            bottom: 5px;
+            bottom: 10px;
         }
 
         /* Estilos do Modal (Janelinha) Customizado */
@@ -205,10 +205,15 @@
             let img = document.getElementById('poke-' + index);
             img.style.display = 'block';
 
-            img.src = `https://play.pokemonshowdown.com/sprites/ani/${identificador}.gif`;
+            const sourceProjectPokemon = `https://projectpokemon.org/images/normal-sprite/${identificador}.gif`;
+            img.src = sourceProjectPokemon;
 
             img.onerror = function () {
-                if (this.src.includes('showdown')) {
+                if (this.src.includes('projectpokemon')) {
+                    this.src = `https://play.pokemonshowdown.com/sprites/xyani/${identificador}.gif`;
+                } else if (this.src.includes('xyani')) {
+                    this.src = `https://play.pokemonshowdown.com/sprites/ani/${identificador}.gif`;
+                } else if (this.src.includes('ani/')) {
                     this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${identificador}.png`;
                 } else {
                     this.style.display = 'none';

@@ -73,8 +73,8 @@
         }
 
         .pokemon-img {
-            max-width: 90%;
-            max-height: 90%;
+            max-width: 140%;
+            max-height: 140%;
             object-fit: contain;
             display: none;
         }
@@ -212,10 +212,15 @@
             container.style.border = "2px solid #1a73e8";
 
             identificador = identificador.toLowerCase().trim();
-            img.src = `https://play.pokemonshowdown.com/sprites/ani/${identificador}.gif`;
+            const sourceProjectPokemon = `https://projectpokemon.org/images/normal-sprite/${identificador}.gif`;
+            img.src = sourceProjectPokemon;
 
             img.onerror = function () {
-                if (this.src.includes('showdown')) {
+                if (this.src.includes('projectpokemon')) {
+                    this.src = `https://play.pokemonshowdown.com/sprites/xyani/${identificador}.gif`;
+                } else if (this.src.includes('xyani')) {
+                    this.src = `https://play.pokemonshowdown.com/sprites/ani/${identificador}.gif`;
+                } else if (this.src.includes('ani/')) {
                     this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${identificador}.png`;
                 } else {
                     this.style.display = 'none';

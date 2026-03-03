@@ -73,11 +73,11 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -55%);
-            /* Sits exactly in the center, pushed just slightly up */
-            width: 100%;
-            /* Same width as pokeball roughly */
-            height: 100%;
+            transform: translate(-50%, -60%);
+            /* Sits exactly in the center, pushed just slightly up to stand on the ball */
+            width: 140%;
+            /* Make the pokemon bigger than the pokeball so it pops out */
+            height: 140%;
             object-fit: contain;
             filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.6));
             display: none;
@@ -295,9 +295,11 @@
 
             identificador = identificador.toLowerCase().trim();
 
+            // Uma fonte de dados maior (Modelos 3D das gerações XY e além)
+            const sourceProjectPokemon = `https://projectpokemon.org/images/normal-sprite/${identificador}.gif`;
+
             // Verifica se a imagem já é essa pra não ficar piscando à toa
-            const novaSrcGIF = `https://play.pokemonshowdown.com/sprites/ani/${identificador}.gif`;
-            if (img.src === novaSrcGIF) return;
+            if (img.src === sourceProjectPokemon) return;
 
             img.style.display = 'block';
             img.classList.remove('fade-in');
@@ -306,12 +308,19 @@
             void img.offsetWidth;
             img.classList.add('fade-in');
 
-            // Primeiro tenta GIF animado do Showdown
-            img.src = novaSrcGIF;
+            // Tenta carregar a melhor/maior qualidade primeiro
+            img.src = sourceProjectPokemon;
 
-            // Se falhar o GIF, tenta a PNG do PokeAPI
+            // Sistema de Fallback (Se a imagem não existir na fonte 1, vai tentar a 2, 3, etc)
             img.onerror = function () {
-                if (this.src.includes('showdown')) {
+                if (this.src.includes('projectpokemon')) {
+                    // Fallback 1: Modelos 3D do Showdown
+                    this.src = `https://play.pokemonshowdown.com/sprites/xyani/${identificador}.gif`;
+                } else if (this.src.includes('xyani')) {
+                    // Fallback 2: Sprites 2D do Showdown (Gen 5 e mais recentes)
+                    this.src = `https://play.pokemonshowdown.com/sprites/ani/${identificador}.gif`;
+                } else if (this.src.includes('ani/')) {
+                    // Fallback 3: PNG Estático da PokeAPI
                     this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${identificador}.png`;
                 } else {
                     // Se falhar tudo (nome errado), esconde
