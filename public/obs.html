@@ -216,9 +216,14 @@
 
         // Tenta carregar do localStorage imediatamente para não piscar a tela
         for (let i = 0; i < 6; i++) {
-            let saved = localStorage.getItem('obs_slot_' + roomName + '_' + i);
-            if (saved) {
-                atualizarImagem(i, saved, false);
+            let savedStr = localStorage.getItem('obs_slot_' + roomName + '_' + i);
+            if (savedStr) {
+                try {
+                    let parsed = JSON.parse(savedStr);
+                    atualizarImagem(i, parsed, false);
+                } catch(e) {
+                    atualizarImagem(i, savedStr, false); // fallback to legacy string
+                }
             }
         }
 
@@ -226,14 +231,14 @@
         const socket = typeof io !== 'undefined' ? io() : null;
 
         if (socket) {
-            // Entrar na sala
-            socket.emit('joinRoom', roomName);
+            // Entrar na sala pelo OBS (passa como objeto para uniformidade)
+            socket.emit('joinRoom', { room: roomName });
 
             // O servidor avisa que a equipe mudou (recebe todos os 6)
             socket.on('teamUpdate', (team) => {
                 console.log("Time atualizado recebido do Admin:", team);
-                team.forEach((pokemonName, index) => {
-                    atualizarImagem(index, pokemonName, true);
+                team.forEach((slotData, index) => {
+                    atualizarImagem(index, slotData, true);
                 });
             });
         }
@@ -245,7 +250,19 @@
             slotAtual = index;
             document.getElementById('modal-overlay').style.display = 'flex';
             const input = document.getElementById('poke-input');
-            input.value = localStorage.getItem('obs_slot_' + roomName + '_' + index) || '';
+            
+            let savedStr = localStorage.getItem('obs_slot_' + roomName + '_' + index);
+            if (savedStr) {
+                try {
+                    let parsed = JSON.parse(savedStr);
+                    input.value = parsed.name || '';
+                } catch(e) {
+                    input.value = savedStr;
+                }
+            } else {
+                input.value = '';
+            }
+            
             input.focus();
         }
 
@@ -256,8 +273,9 @@
         function confirmarPokemon() {
             let valor = document.getElementById('poke-input').value.trim().toLowerCase();
             if (valor !== "") {
-                atualizarImagem(slotAtual, valor, true);
-                if (socket) socket.emit('updateSlot', { index: slotAtual, pokemon: valor });
+                let slotData = { name: valor, isShiny: false, isAnimated: false };
+                atualizarImagem(slotAtual, slotData, true);
+                if (socket) socket.emit('updateSlot', Object.assign({ index: slotAtual }, slotData));
             } else {
                 limparPokemonModal();
                 return;
@@ -266,7 +284,7 @@
         }
 
         function limparPokemonModal() {
-            atualizarImagem(slotAtual, "", true);
+            atualizarImagem(slotAtual, null, true);
             if (socket) socket.emit('clearSlot', slotAtual);
             fecharModal();
         }
@@ -282,31 +300,51 @@
         // ==========================================
         // Lógica de carregar as imagens
         // ==========================================
-        function atualizarImagem(index, identificador, saveLocal = true) {
+        function atualizarImagem(index, slotData, saveLocal = true) {
+            let nomeStr = "";
+            let isShiny = false;
+            let isAnimated = false;
+
+            if (typeof slotData === 'object' && slotData !== null) {
+                nomeStr = slotData.name;
+                isShiny = slotData.isShiny;
+                isAnimated = slotData.isAnimated;
+            } else if (typeof slotData === 'string') {
+                nomeStr = slotData;
+            }
+
             if (saveLocal) {
-                if (!identificador || identificador.trim() === "") {
+                if (!nomeStr || nomeStr.trim() === "") {
                     localStorage.removeItem('obs_slot_' + roomName + '_' + index);
                 } else {
-                    localStorage.setItem('obs_slot_' + roomName + '_' + index, identificador);
+                    localStorage.setItem('obs_slot_' + roomName + '_' + index, JSON.stringify({name: nomeStr, isShiny, isAnimated}));
                 }
             }
 
             let img = document.getElementById('poke-' + index);
 
             // Se veio vazio, limpa e esconde
-            if (!identificador || identificador.trim() === "") {
+            if (!nomeStr || nomeStr.trim() === "") {
                 img.style.display = 'none';
                 img.src = "";
                 return;
             }
 
-            identificador = identificador.toLowerCase().trim();
+            nomeStr = nomeStr.toLowerCase().trim();
 
-            // Uma fonte de dados com modelos em alta qualidade (PNG do Showdown)
-            const sourceShowdownDex = `https://play.pokemonshowdown.com/sprites/dex/${identificador}.png`;
+            let url = '';
+            if (isAnimated && isShiny) {
+                url = `https://play.pokemonshowdown.com/sprites/ani-shiny/${nomeStr}.gif`;
+            } else if (isAnimated && !isShiny) {
+                url = `https://play.pokemonshowdown.com/sprites/ani/${nomeStr}.gif`;
+            } else if (!isAnimated && isShiny) {
+                url = `https://play.pokemonshowdown.com/sprites/dex-shiny/${nomeStr}.png`;
+            } else {
+                url = `https://play.pokemonshowdown.com/sprites/dex/${nomeStr}.png`;
+            }
 
             // Verifica se a imagem já é essa pra não ficar piscando à toa
-            if (img.src === sourceShowdownDex) return;
+            if (img.src === url) return;
 
             img.style.display = 'block';
             img.classList.remove('fade-in');
@@ -316,15 +354,15 @@
             img.classList.add('fade-in');
 
             // Tenta carregar a melhor/maior qualidade primeiro
-            img.src = sourceShowdownDex;
+            img.src = url;
 
-            // Sistema de Fallback (Se a imagem não existir na fonte 1, vai tentar a 2, 3, etc)
+            // Sistema de Fallback
             img.onerror = function () {
-                if (this.src.includes('dex/')) {
-                    // Fallback 1: PNG Estático da PokeAPI
-                    this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${identificador}.png`;
+                if (this.src.includes('play.pokemonshowdown.com') && !this.src.includes('dex-shiny')) {
+                    this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${nomeStr}.png`;
+                } else if (this.src.includes('dex-shiny') || this.src.includes('ani-shiny')) {
+                    this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${nomeStr}.png`;
                 } else {
-                    // Se falhar tudo (nome errado), esconde
                     this.style.display = 'none';
                 }
             };

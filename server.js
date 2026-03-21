@@ -21,13 +21,23 @@ const port = process.env.PORT || 3000;
 const stateFile = path.join(__dirname, 'teams_state.json');
 
 // Initialize state for multiple rooms
-let teamsState = { default: Array(6).fill("") };
+let teamsState = { default: Array(6).fill(null) };
 
 // Load saved state if exists
 if (fs.existsSync(stateFile)) {
     try {
         const data = fs.readFileSync(stateFile, 'utf8');
-        teamsState = JSON.parse(data);
+        let loadedState = JSON.parse(data);
+        // Normalize loaded state to objects
+        for (let room in loadedState) {
+            for (let i = 0; i < 6; i++) {
+                if (typeof loadedState[room][i] === 'string') {
+                    if (loadedState[room][i] === "") loadedState[room][i] = null;
+                    else loadedState[room][i] = { name: loadedState[room][i], isShiny: false, isAnimated: false };
+                }
+            }
+        }
+        teamsState = loadedState;
     } catch (e) {
         console.error("Erro ao ler teams_state.json", e);
     }
@@ -44,9 +54,16 @@ io.on('connection', (socket) => {
     socket.room = 'default';
 
     // Cliente pede para entrar em uma sala específica
-    socket.on('joinRoom', (room) => {
-        if (!room) room = 'default';
-        console.log(`Socket entrou na sala: ${room}`);
+    socket.on('joinRoom', (data) => {
+        let room = 'default';
+
+        if (typeof data === 'string') {
+            room = data;
+        } else if (typeof data === 'object') {
+            room = data.room || 'default';
+        }
+
+        console.log(`Socket tentando entrar na sala: ${room}`);
         
         // Sai da sala anterior se houver
         if (socket.room) {
@@ -58,7 +75,7 @@ io.on('connection', (socket) => {
 
         // Se a sala não existe no estado, cria com time vazio
         if (!teamsState[room]) {
-            teamsState[room] = Array(6).fill("");
+            teamsState[room] = Array(6).fill(null);
         }
 
         // Envia o time atual APENAS para quem acabou de entrar
@@ -67,16 +84,17 @@ io.on('connection', (socket) => {
 
     // Friend updates a slot
     socket.on('updateSlot', (data) => {
-        const { index, pokemon } = data;
+        const { index, pokemon, isShiny, isAnimated } = data;
         const room = socket.room;
         
         if (index >= 0 && index < 6) {
-            if (!teamsState[room]) teamsState[room] = Array(6).fill("");
-            teamsState[room][index] = pokemon;
+            if (!teamsState[room]) teamsState[room] = Array(6).fill(null);
+            
+            teamsState[room][index] = { name: pokemon, isShiny: !!isShiny, isAnimated: !!isAnimated };
             saveState();
             // Broadcast the new team ONLY to everyone in this room
             io.to(room).emit('teamUpdate', teamsState[room]);
-            console.log(`Sala [${room}] - Slot ${index} atualizado para ${pokemon}`);
+            console.log(`Sala [${room}] - Slot ${index} atualizado para ${pokemon} (Shiny: ${isShiny}, Anim: ${isAnimated})`);
         }
     });
 
@@ -85,8 +103,8 @@ io.on('connection', (socket) => {
         const room = socket.room;
         
         if (index >= 0 && index < 6) {
-            if (!teamsState[room]) teamsState[room] = Array(6).fill("");
-            teamsState[room][index] = "";
+            if (!teamsState[room]) teamsState[room] = Array(6).fill(null);
+            teamsState[room][index] = null;
             saveState();
             io.to(room).emit('teamUpdate', teamsState[room]);
             console.log(`Sala [${room}] - Slot ${index} limpo`);

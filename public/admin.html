@@ -153,13 +153,27 @@
         const socket = io();
         const grid = document.getElementById('grid');
 
+        // Puxar lista da PokeAPI para o Autocomplete
+        fetch('https://pokeapi.co/api/v2/pokemon?limit=1500')
+            .then(res => res.json())
+            .then(data => {
+                const datalist = document.createElement('datalist');
+                datalist.id = 'pokemon-list';
+                data.results.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.name;
+                    datalist.appendChild(opt);
+                });
+                document.body.appendChild(datalist);
+            });
+
         // Pega o nome da sala da URL
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('user') || 'default';
 
         // Entra na sala logo ao conectar
         socket.on('connect', () => {
-            socket.emit('joinRoom', roomName);
+            socket.emit('joinRoom', { room: roomName });
             
             // Atualiza o subtítulo para mostrar qual sala está
             if (roomName !== 'default') {
@@ -177,7 +191,11 @@
                 <div class="img-container">
                     <img id="prev-${i}" class="pokemon-img" src="">
                 </div>
-                <input type="text" id="input-${i}" placeholder="Nome ou Nº da Dex">
+                <input type="text" id="input-${i}" list="pokemon-list" placeholder="Nome ou Nº da Dex">
+                <div style="display: flex; gap: 10px; font-size: 13px; margin-bottom: 10px; color: #555;">
+                    <label><input type="checkbox" id="shiny-${i}"> Shiny 🌟</label>
+                    <label><input type="checkbox" id="ani-${i}"> Animado 🎬</label>
+                </div>
                 <div class="btn-group">
                     <button class="btn-update" onclick="enviar(${i})">Salvar</button>
                     <button class="btn-clear" onclick="limpar(${i})">🗑️</button>
@@ -194,30 +212,56 @@
 
         // Recebe o estado atual do servidor e atualiza os inputs/imagens
         socket.on('teamUpdate', (team) => {
-            team.forEach((pokemonName, index) => {
-                document.getElementById(`input-${index}`).value = pokemonName || "";
-                atualizarPreviewLocal(index, pokemonName);
+            team.forEach((slotData, index) => {
+                let name = "";
+                if (slotData && typeof slotData === 'object') {
+                    name = slotData.name || "";
+                    document.getElementById(`shiny-${index}`).checked = slotData.isShiny || false;
+                    document.getElementById(`ani-${index}`).checked = slotData.isAnimated || false;
+                } else if (typeof slotData === 'string') {
+                    name = slotData; // legacy fallback
+                }
+                
+                document.getElementById(`input-${index}`).value = name;
+                atualizarPreviewLocal(index, slotData);
             });
         });
 
         // Envia novo pokemon pro servidor (e consequentemente pro OBS)
         function enviar(index) {
             const val = document.getElementById(`input-${index}`).value.trim().toLowerCase();
-            socket.emit('updateSlot', { index: index, pokemon: val });
+            const isShiny = document.getElementById(`shiny-${index}`).checked;
+            const isAnimated = document.getElementById(`ani-${index}`).checked;
+            
+            socket.emit('updateSlot', { index: index, pokemon: val, isShiny: isShiny, isAnimated: isAnimated });
             mostrarAviso();
         }
 
         // Limpa o pokemon do servidor
         function limpar(index) {
             document.getElementById(`input-${index}`).value = "";
+            document.getElementById(`shiny-${index}`).checked = false;
+            document.getElementById(`ani-${index}`).checked = false;
             socket.emit('clearSlot', index);
             mostrarAviso();
         }
 
         // Mostra o pokemon no painel admin (mesma lógica do OBS para a pessoa ver o que colocou)
-        function atualizarPreviewLocal(index, identificador) {
+        function atualizarPreviewLocal(index, slotData) {
             let img = document.getElementById(`prev-${index}`);
             let container = img.parentElement;
+            
+            let identificador = "";
+            let isShiny = false;
+            let isAnimated = false;
+
+            if (slotData && typeof slotData === 'object') {
+                identificador = slotData.name;
+                isShiny = slotData.isShiny;
+                isAnimated = slotData.isAnimated;
+            } else if (typeof slotData === 'string') {
+                identificador = slotData;
+            }
 
             if (!identificador) {
                 img.style.display = 'none';
@@ -229,12 +273,25 @@
             container.style.border = "2px solid #1a73e8";
 
             identificador = identificador.toLowerCase().trim();
-            const sourceShowdownDex = `https://play.pokemonshowdown.com/sprites/dex/${identificador}.png`;
-            img.src = sourceShowdownDex;
+            
+            let url = '';
+            if (isAnimated && isShiny) {
+                url = `https://play.pokemonshowdown.com/sprites/ani-shiny/${identificador}.gif`;
+            } else if (isAnimated && !isShiny) {
+                url = `https://play.pokemonshowdown.com/sprites/ani/${identificador}.gif`;
+            } else if (!isAnimated && isShiny) {
+                url = `https://play.pokemonshowdown.com/sprites/dex-shiny/${identificador}.png`;
+            } else {
+                url = `https://play.pokemonshowdown.com/sprites/dex/${identificador}.png`;
+            }
+
+            img.src = url;
 
             img.onerror = function () {
-                if (this.src.includes('dex/')) {
+                if (this.src.includes('play.pokemonshowdown.com') && !this.src.includes('dex-shiny')) {
                     this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${identificador}.png`;
+                } else if (this.src.includes('dex-shiny') || this.src.includes('ani-shiny')) {
+                    this.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${identificador}.png`;
                 } else {
                     this.style.display = 'none';
                     container.style.border = "2px dashed red"; // Indica erro no nome
