@@ -210,9 +210,13 @@
 
         let slotAtual = -1;
 
+        // Pega o nome da sala (user) da URL, ex: obs.html?user=joao
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('user') || 'default';
+
         // Tenta carregar do localStorage imediatamente para não piscar a tela
         for (let i = 0; i < 6; i++) {
-            let saved = localStorage.getItem('obs_slot_' + i);
+            let saved = localStorage.getItem('obs_slot_' + roomName + '_' + i);
             if (saved) {
                 atualizarImagem(i, saved, false);
             }
@@ -222,6 +226,9 @@
         const socket = typeof io !== 'undefined' ? io() : null;
 
         if (socket) {
+            // Entrar na sala
+            socket.emit('joinRoom', roomName);
+
             // O servidor avisa que a equipe mudou (recebe todos os 6)
             socket.on('teamUpdate', (team) => {
                 console.log("Time atualizado recebido do Admin:", team);
@@ -238,7 +245,7 @@
             slotAtual = index;
             document.getElementById('modal-overlay').style.display = 'flex';
             const input = document.getElementById('poke-input');
-            input.value = localStorage.getItem('obs_slot_' + index) || '';
+            input.value = localStorage.getItem('obs_slot_' + roomName + '_' + index) || '';
             input.focus();
         }
 
@@ -278,9 +285,9 @@
         function atualizarImagem(index, identificador, saveLocal = true) {
             if (saveLocal) {
                 if (!identificador || identificador.trim() === "") {
-                    localStorage.removeItem('obs_slot_' + index);
+                    localStorage.removeItem('obs_slot_' + roomName + '_' + index);
                 } else {
-                    localStorage.setItem('obs_slot_' + index, identificador);
+                    localStorage.setItem('obs_slot_' + roomName + '_' + index, identificador);
                 }
             }
 
@@ -295,8 +302,8 @@
 
             identificador = identificador.toLowerCase().trim();
 
-            // Uma fonte de dados com modelos 3D estáticos em alta qualidade (PNG)
-            const sourceShowdownDex = `https://projectpokemon.org/images/normal-sprite/${identificador}.gif`;
+            // Uma fonte de dados com modelos em alta qualidade (PNG do Showdown)
+            const sourceShowdownDex = `https://play.pokemonshowdown.com/sprites/dex/${identificador}.png`;
 
             // Verifica se a imagem já é essa pra não ficar piscando à toa
             if (img.src === sourceShowdownDex) return;

@@ -153,6 +153,23 @@
         const socket = io();
         const grid = document.getElementById('grid');
 
+        // Pega o nome da sala da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('user') || 'default';
+
+        // Entra na sala logo ao conectar
+        socket.on('connect', () => {
+            socket.emit('joinRoom', roomName);
+            
+            // Atualiza o subtítulo para mostrar qual sala está
+            if (roomName !== 'default') {
+                const subtitulo = document.querySelector('.subtitle');
+                if (subtitulo && !subtitulo.innerHTML.includes('Sala:')) {
+                    subtitulo.innerHTML += `<br><strong>Sala (User):</strong> ${roomName}`;
+                }
+            }
+        });
+
         // Cria os 6 cards no HTML
         grid.innerHTML = Array.from({ length: 6 }, (_, i) => `
             <div class="slot-card">
